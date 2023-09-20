@@ -9,10 +9,12 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/BurntSushi/toml"
 	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
@@ -23,8 +25,9 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var p struct {
+		Ref  string `json:"ref"`
 		Repo struct {
-			Name string `json:"name"`
+			Name string `json:"full_name"`
 			URL  string `json:"ssh_url"`
 		} `json:"repository"`
 	}
@@ -32,23 +35,34 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		log.Print(err)
 		return
 	}
-	go deploy(p.Repo.Name, p.Repo.URL)
+	if b, ok := strings.CutPrefix(p.Ref, "refs/heads/"); ok {
+		go deploy(repoKey{
+			name:   p.Repo.Name,
+			branch: b,
+		}, p.Repo.URL)
+	} else {
+		log.Print("branch name not found in payload")
+		errno := http.StatusInternalServerError
+		http.Error(w, http.StatusText(errno), errno)
+	}
 }
 
 type CIConfig struct {
-	Repos      []RepoConfig `toml:"repo"`
-	WhAuth     string       `toml:"auth"`
-	SshPrivKey string       `toml:"keyfile"`
-	Address    string       `toml:"address"`
+	Repos   []RepoConfig `toml:"repo"`
+	WhAuth  string       `toml:"auth"`
+	Address string       `toml:"address"`
 }
 
 type RepoConfig struct {
-	Name string   `toml:"name"`
-	Path string   `toml:"path"`
-	Cmd  []string `toml:"cmd"`
+	SshPrivKey string   `toml:"keyfile"`
+	Name       string   `toml:"name"`
+	Path       string   `toml:"path"`
+	Cmd        []string `toml:"cmd"`
+	Branch     string   `toml:"branch"`
+	SshAuth    *ssh.PublicKeys
 }
 
-func deploy(repo string, URL string) {
+func deploy(repo repoKey, URL string) {
 	if conf, ok := repos[repo]; ok {
 		r, err := git.PlainOpen(conf.Path)
 		if err != nil && err != git.ErrRepositoryNotExists {
@@ -57,9 +71,10 @@ func deploy(repo string, URL string) {
 		} else if err == git.ErrRepositoryNotExists {
 			log.Print(URL)
 			_, err = git.PlainClone(conf.Path, false, &git.CloneOptions{
-				URL:      URL,
-				Auth:     sshAuth,
-				Progress: os.Stdout,
+				URL:           URL,
+				Auth:          sshAuth,
+				Progress:      os.Stdout,
+				ReferenceName: plumbing.NewBranchReferenceName(conf.Branch),
 			})
 			if err != nil {
 				log.Print(err)
@@ -111,10 +126,11 @@ Config file format:
 
 address = "<bind address>"
 auth = "<auth token>"
-keyfile = "<ssh private key file>"
 
 [[repo]]
 	name = "<gitea repo name>"
+	branch = "<git branch>"
+	keyfile = "<ssh private key file>"
 	path = "<path to repo>"
 	cmd = "<build command>"
 ...
@@ -122,10 +138,15 @@ keyfile = "<ssh private key file>"
 `)
 }
 
+type repoKey struct {
+	name   string
+	branch string
+}
+
 var ConfigFile string
 var config CIConfig
 var sshAuth *ssh.PublicKeys
-var repos map[string]RepoConfig
+var repos map[repoKey]RepoConfig
 
 func reload() {
 	file, err := os.ReadFile(ConfigFile)
@@ -136,17 +157,21 @@ func reload() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	repos = make(map[string]RepoConfig)
+	repos = make(map[repoKey]RepoConfig)
 	for _, v := range config.Repos {
-		repos[v.Name] = v
-	}
-	key, err := os.ReadFile(config.SshPrivKey)
-	if err != nil {
-		log.Fatal(err)
-	}
-	sshAuth, err = ssh.NewPublicKeys("git", key, "")
-	if err != nil {
-		log.Fatal(err)
+		key, err := os.ReadFile(v.SshPrivKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		sshAuth, err = ssh.NewPublicKeys("git", key, "")
+		if err != nil {
+			log.Fatal(err)
+		}
+		v.SshAuth = sshAuth
+		repos[repoKey{
+			name:   v.Name,
+			branch: v.Branch,
+		}] = v
 	}
 }
 
