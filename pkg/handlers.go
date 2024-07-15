@@ -26,7 +26,7 @@ func (c *Config) MainHandler(w http.ResponseWriter, r *http.Request) {
 		} `json:"repository"`
 	}
 	if err := json.Unmarshal(payload, &p); err != nil {
-		log.Print(err)
+		log.Print("Error decoding json payload: ", err)
 		return
 	}
 
@@ -40,12 +40,12 @@ func (c *Config) MainHandler(w http.ResponseWriter, r *http.Request) {
 			if payloadsum != shasum {
 				errno := http.StatusUnauthorized
 				http.Error(w, http.StatusText(errno), errno)
-				log.Print("Unauthorized")
+				log.Print("Unauthorized request")
 				return
 			}
 			err := deploy(conf, p.Repo.URL)
 			if err != nil {
-				log.Print(err)
+				log.Print("Error deploying: ", err)
 				errno := http.StatusInternalServerError
 				http.Error(w, http.StatusText(errno), errno)
 			}
@@ -54,7 +54,7 @@ func (c *Config) MainHandler(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 		}
 	} else {
-		log.Print("branch name not found in payload")
+		log.Print("Branch not found")
 		errno := http.StatusInternalServerError
 		http.Error(w, http.StatusText(errno), errno)
 	}
