@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -16,29 +15,12 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"uci/pkg"
 
-	"github.com/BurntSushi/toml"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
-
-type CIConfig struct {
-	Repos    []RepoConfig `toml:"repo"`
-	TLS      bool         `toml:"TLS"`
-	CertFile string       `toml:"certfile"`
-	KeyFile  string       `toml:"keyfile"`
-	Address  string       `toml:"address"`
-}
-
-type RepoConfig struct {
-	SshPrivKey string   `toml:"keyfile"`
-	Name       string   `toml:"name"`
-	Path       string   `toml:"path"`
-	Cmd        []string `toml:"cmd"`
-	Branch     string   `toml:"branch"`
-	Auth       string   `toml:"auth"`
-}
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
 	payload, err := io.ReadAll(r.Body)
@@ -60,11 +42,8 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if b, ok := strings.CutPrefix(p.Ref, "refs/heads/"); ok {
-		key := repoKey{
-			name:   p.Repo.Name,
-			branch: b,
-		}
-		if conf, ok := repos[key]; ok {
+		repoKey := p.Repo.Name + "^" + b
+		if conf, ok := config.Repos[repoKey]; ok {
 			shasum := r.Header.Get("x-hub-signature-256")
 			h := hmac.New(sha256.New, []byte(conf.Auth))
 			h.Write(payload)
@@ -81,6 +60,9 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 				errno := http.StatusInternalServerError
 				http.Error(w, http.StatusText(errno), errno)
 			}
+		} else {
+			log.Print("Repository key: ", repoKey, " not found")
+			http.NotFound(w, r)
 		}
 	} else {
 		log.Print("branch name not found in payload")
@@ -89,7 +71,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func deploy(conf RepoConfig, URL string) error {
+func deploy(conf pkg.RepoConfig, URL string) error {
 	log.Print(URL)
 	urlinfo, err := url.Parse(URL)
 	if err != nil {
@@ -145,61 +127,11 @@ func deploy(conf RepoConfig, URL string) error {
 	return cmd.Run()
 }
 
-func Usage() {
-	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
-	flag.PrintDefaults()
-	fmt.Fprintf(flag.CommandLine.Output(), `
-Config file format:
-
-address  = "<bind address>"
-TLS      = true/false
-keyfile  = "<tls private key>"
-certfile = "<tls certificate>"
-logfile  = "<logfile>"
-
-[[repo]]
-	name     = "<gitea repo name>"
-	branch   = "<git branch>"
-	keyfile  = "<ssh private key file>"
-	path     = "<path to repo>"
-	cmd      = "<build command>"
-	auth     = "<auth token>"
-...
-
-You might want to specify SSH_KNOWN_HOSTS environment variable for ssh to work
-
-`)
-}
-
-type repoKey struct {
-	name   string
-	branch string
-}
-
 var ConfigFile string
-var config CIConfig
-var repos map[repoKey]RepoConfig
-
-func reload() {
-	file, err := os.ReadFile(ConfigFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = toml.Decode(string(file), &config)
-	if err != nil {
-		log.Fatal(err)
-	}
-	repos = make(map[repoKey]RepoConfig)
-	for _, v := range config.Repos {
-		repos[repoKey{
-			name:   v.Name,
-			branch: v.Branch,
-		}] = v
-	}
-}
+var config pkg.Config
 
 func init() {
-	flag.Usage = Usage
+	flag.Usage = pkg.Usage
 	flag.StringVar(&ConfigFile, "c", "config.toml", "Config file")
 	flag.Parse()
 
@@ -213,10 +145,10 @@ func init() {
 		for {
 			<-c
 			log.Print("Received SIGHUP, reloading config")
-			reload()
+			config.Reload(ConfigFile)
 		}
 	}()
-	reload()
+	config.Reload(ConfigFile)
 }
 
 func main() {
