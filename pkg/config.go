@@ -22,6 +22,7 @@ type Config struct {
 	KeyFile      string       `toml:"keyfile"`
 	Address      string       `toml:"address"`
 	PidFile      string       `toml:"pidfile"`
+	LogFile      string       `toml:"logfile"`
 	Repos        map[string]RepoConfig
 }
 

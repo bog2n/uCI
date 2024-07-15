@@ -31,7 +31,7 @@ func deploy(conf RepoConfig, URL string) error {
 		_, err = git.PlainClone(conf.Path, false, &git.CloneOptions{
 			URL:           URL,
 			Auth:          sshAuth,
-			Progress:      os.Stdout,
+			Progress:      log.Default().Writer(),
 			ReferenceName: plumbing.NewBranchReferenceName(conf.Branch),
 		})
 		if err != nil {
@@ -52,7 +52,7 @@ func deploy(conf RepoConfig, URL string) error {
 		}
 		err = w.Pull(&git.PullOptions{
 			Auth:     sshAuth,
-			Progress: os.Stdout,
+			Progress: log.Default().Writer(),
 		})
 		if err != nil && err != git.NoErrAlreadyUpToDate {
 			return err
@@ -63,6 +63,6 @@ func deploy(conf RepoConfig, URL string) error {
 	}
 	cmd := exec.Command(conf.Cmd[0], conf.Cmd[1:]...)
 	cmd.Dir = conf.Path
-	cmd.Stdout = os.Stdout
+	cmd.Stdout = log.Default().Writer()
 	return cmd.Run()
 }

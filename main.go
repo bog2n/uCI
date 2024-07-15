@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 var (
 	ConfigFile string
 	Signal     string
+	logfile    *os.File
 	config     pkg.Config
 )
 
@@ -23,8 +25,21 @@ func init() {
 	flag.StringVar(&Signal, "s", "", "signal to send to process: reload, stop")
 	flag.Parse()
 
+	err := config.Reload(ConfigFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if os.Getenv("DEV") != "" {
 		log.Default().SetFlags(log.Lshortfile | log.Lmicroseconds | log.Ldate)
+	}
+	if config.LogFile != "" {
+		logfile, err := os.OpenFile(config.LogFile,
+			os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Default().SetOutput(io.MultiWriter(os.Stdout, logfile))
 	}
 
 	c := make(chan os.Signal, 1)
@@ -41,16 +56,13 @@ func init() {
 				}
 			case syscall.SIGTERM:
 				// TODO probably should add context stuff here
+				log.Print("Received SIGTERM, exiting...")
+				logfile.Close()
 				os.Remove(config.PidFile)
 				os.Exit(0)
 			}
 		}
 	}()
-
-	err := config.Reload(ConfigFile)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	if Signal != "" {
 		pidstring, err := os.ReadFile(config.PidFile)
