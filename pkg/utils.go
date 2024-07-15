@@ -17,6 +17,7 @@ TLS      = true/false
 keyfile  = "<tls private key>"
 certfile = "<tls certificate>"
 logfile  = "<logfile>"
+pidfile  = "<pidfile>"
 
 [[repo]]
 	name     = "<gitea repo name>"

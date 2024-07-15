@@ -21,6 +21,7 @@ type Config struct {
 	CertFile     string       `toml:"certfile"`
 	KeyFile      string       `toml:"keyfile"`
 	Address      string       `toml:"address"`
+	PidFile      string       `toml:"pidfile"`
 	Repos        map[string]RepoConfig
 }
 
@@ -35,7 +36,7 @@ func (c *Config) Reload(configfile string) error {
 		return err
 	}
 	tmp.Repos = make(map[string]RepoConfig)
-	for _, v := range c.Repositories {
+	for _, v := range tmp.Repositories {
 		tmp.Repos[v.Name+" "+v.Branch] = v
 	}
 	*c = tmp
