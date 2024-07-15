@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -36,9 +37,7 @@ type RepoConfig struct {
 	Path       string   `toml:"path"`
 	Cmd        []string `toml:"cmd"`
 	Branch     string   `toml:"branch"`
-	Provider   string   `toml:"prov"`
 	Auth       string   `toml:"auth"`
-	SshAuth    *ssh.PublicKeys
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,32 +65,22 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			branch: b,
 		}
 		if conf, ok := repos[key]; ok {
-			switch conf.Provider {
-			case "gitea":
-				log.Print("Gitea provider")
-				if r.Header.Get("Authorization") != conf.Auth {
-					errno := http.StatusUnauthorized
-					http.Error(w, http.StatusText(errno), errno)
-					log.Print("Unauthorized")
-					return
-				}
-			case "github":
-				log.Print("Github provider")
-				shasum := r.Header.Get("x-hub-signature-256")
-				h := hmac.New(sha256.New, []byte(conf.Auth))
-				h.Write(payload)
-				payloadsum := "sha256=" + hex.EncodeToString(h.Sum(nil))
-				if payloadsum != shasum {
-					errno := http.StatusUnauthorized
-					http.Error(w, http.StatusText(errno), errno)
-					log.Print("Unauthorized")
-					return
-				}
-			default:
-				log.Print("Unknown provider")
+			shasum := r.Header.Get("x-hub-signature-256")
+			h := hmac.New(sha256.New, []byte(conf.Auth))
+			h.Write(payload)
+			payloadsum := "sha256=" + hex.EncodeToString(h.Sum(nil))
+			if payloadsum != shasum {
+				errno := http.StatusUnauthorized
+				http.Error(w, http.StatusText(errno), errno)
+				log.Print("Unauthorized")
 				return
 			}
-			go deploy(conf, p.Repo.URL)
+			err := deploy(conf, p.Repo.URL)
+			if err != nil {
+				log.Print(err)
+				errno := http.StatusInternalServerError
+				http.Error(w, http.StatusText(errno), errno)
+			}
 		}
 	} else {
 		log.Print("branch name not found in payload")
@@ -100,58 +89,60 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func deploy(conf RepoConfig, URL string) {
+func deploy(conf RepoConfig, URL string) error {
+	log.Print(URL)
+	urlinfo, err := url.Parse(URL)
+	if err != nil {
+		return err
+	}
+	user := urlinfo.User.Username()
+	key, err := os.ReadFile(conf.SshPrivKey)
+	if err != nil {
+		return err
+	}
+	sshAuth, err := ssh.NewPublicKeys(user, key, "")
+
 	r, err := git.PlainOpen(conf.Path)
 	if err != nil && err != git.ErrRepositoryNotExists {
-		log.Print(err)
-		return
+		return err
 	} else if err == git.ErrRepositoryNotExists {
-		log.Print(URL)
 		_, err = git.PlainClone(conf.Path, false, &git.CloneOptions{
 			URL:           URL,
-			Auth:          conf.SshAuth,
+			Auth:          sshAuth,
 			Progress:      os.Stdout,
 			ReferenceName: plumbing.NewBranchReferenceName(conf.Branch),
 		})
 		if err != nil {
-			log.Print(err)
-			return
+			return err
 		}
 	} else {
 		remote, err := r.Remote("origin")
 		if err != nil {
-			log.Print(err)
-			return
+			return err
 		}
 		if len(remote.Config().URLs) > 0 && remote.Config().URLs[0] != URL {
 			log.Print("Wrong repo")
-			return
+			return err
 		}
 		w, err := r.Worktree()
 		if err != nil {
-			log.Print(err)
-			return
+			return err
 		}
 		err = w.Pull(&git.PullOptions{
-			Auth:     conf.SshAuth,
+			Auth:     sshAuth,
 			Progress: os.Stdout,
 		})
 		if err != nil && err != git.NoErrAlreadyUpToDate {
-			log.Print(err)
-			return
+			return err
 		}
 	}
 	if len(conf.Cmd) <= 0 {
-		log.Print("No command supplied")
-		return
+		return err
 	}
 	cmd := exec.Command(conf.Cmd[0], conf.Cmd[1:]...)
 	cmd.Dir = conf.Path
 	cmd.Stdout = os.Stdout
-	err = cmd.Run()
-	if err != nil {
-		log.Print(err)
-	}
+	return cmd.Run()
 }
 
 func Usage() {
@@ -164,6 +155,7 @@ address  = "<bind address>"
 TLS      = true/false
 keyfile  = "<tls private key>"
 certfile = "<tls certificate>"
+logfile  = "<logfile>"
 
 [[repo]]
 	name     = "<gitea repo name>"
@@ -171,11 +163,8 @@ certfile = "<tls certificate>"
 	keyfile  = "<ssh private key file>"
 	path     = "<path to repo>"
 	cmd      = "<build command>"
-	prov     = "<git provider>"
 	auth     = "<auth token>"
 ...
-
-Valid providers are: github, gitea
 
 You might want to specify SSH_KNOWN_HOSTS environment variable for ssh to work
 
@@ -202,15 +191,6 @@ func reload() {
 	}
 	repos = make(map[repoKey]RepoConfig)
 	for _, v := range config.Repos {
-		key, err := os.ReadFile(v.SshPrivKey)
-		if err != nil {
-			log.Fatal(err)
-		}
-		sshAuth, err := ssh.NewPublicKeys("git", key, "")
-		if err != nil {
-			log.Fatal(err)
-		}
-		v.SshAuth = sshAuth
 		repos[repoKey{
 			name:   v.Name,
 			branch: v.Branch,
