@@ -28,10 +28,16 @@ func init() {
 		for {
 			<-c
 			log.Print("Received SIGHUP, reloading config")
-			config.Reload(ConfigFile)
+			err := config.Reload(ConfigFile)
+			if err != nil {
+				log.Print("Error reloading config: ", err)
+			}
 		}
 	}()
-	config.Reload(ConfigFile)
+	err := config.Reload(ConfigFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

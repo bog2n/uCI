@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"log"
 	"os"
 
 	"github.com/BurntSushi/toml"
@@ -25,17 +24,20 @@ type Config struct {
 	Repos        map[string]RepoConfig
 }
 
-func (c *Config) Reload(configfile string) {
+func (c *Config) Reload(configfile string) error {
+	var tmp Config
 	file, err := os.ReadFile(configfile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	_, err = toml.Decode(string(file), &c)
+	_, err = toml.Decode(string(file), &tmp)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	c.Repos = make(map[string]RepoConfig)
+	tmp.Repos = make(map[string]RepoConfig)
 	for _, v := range c.Repositories {
-		c.Repos[v.Name+" "+v.Branch] = v
+		tmp.Repos[v.Name+" "+v.Branch] = v
 	}
+	*c = tmp
+	return nil
 }
