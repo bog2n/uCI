@@ -36,6 +36,11 @@ func init() {
 
 func main() {
 	http.HandleFunc("/uci", config.MainHandler)
+	s := ""
+	if config.TLS {
+		s = " with TLS enabled"
+	}
+	log.Printf("Listening on %s%s", config.Address, s)
 	if config.TLS {
 		log.Fatal(http.ListenAndServeTLS(config.Address, config.CertFile, config.KeyFile, nil))
 	} else {
