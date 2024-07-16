@@ -1,0 +1,15 @@
+{{ define "repo" }}
+{{- template "header" . }}
+{{- template "nav" . }}
+<main>
+{{- with .Content }}
+<b>{{ .Name }}</b>
+<span class="branch">&#66180; {{ .Branch }}</span>
+<hr>
+Deploy command: <code>{{ range .Cmd }}{{.}} {{end}}</code><br>
+{{- end }}
+<pre>
+</pre>
+</main>
+{{- template "footer" . }}
+{{- end }}
