@@ -93,7 +93,9 @@ func init() {
 }
 
 func main() {
+	http.HandleFunc("/", config.UiHandler)
 	http.HandleFunc("/uci", config.MainHandler)
+	http.Handle("/static/", http.FileServer(pkg.StaticFS))
 	s := ""
 	if config.TLS {
 		s = " with TLS enabled"

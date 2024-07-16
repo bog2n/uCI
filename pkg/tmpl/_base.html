@@ -1,0 +1,27 @@
+{{ define "header" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>µCI - {{ .Header }}</title>
+	<link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+	<header><b>μCI - {{ .Header }}</b></header>
+{{- end }}
+
+{{ define "nav" }}
+<nav>
+	<h3>Repositories</h3>
+	<ul>
+	{{ range .Nav }}
+		<li><a href="{{.Href}}">{{.Name}}</a></li>
+	{{ end }}
+	</ul>
+</nav>
+{{- end }}
+
+{{ define "footer"}}
+</body>
+</html>
+{{- end }}

@@ -12,6 +12,11 @@ import (
 )
 
 func (c *Config) MainHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		errno := http.StatusMethodNotAllowed
+		http.Error(w, http.StatusText(errno), errno)
+		return
+	}
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Print(err)
