@@ -48,9 +48,11 @@ func (c *Config) MainHandler(w http.ResponseWriter, r *http.Request) {
 				log.Print("Unauthorized request")
 				return
 			}
-			err := deploy(conf, p.Repo.URL)
+			logger, ready := newDeployLogger(repoKey)
+			defer func() { ready <- true }()
+			err := deploy(conf, p.Repo.URL, logger)
 			if err != nil {
-				log.Print("Error deploying: ", err)
+				logger.Print("Error deploying: ", err)
 				errno := http.StatusInternalServerError
 				http.Error(w, http.StatusText(errno), errno)
 			}

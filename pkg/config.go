@@ -22,7 +22,7 @@ type Config struct {
 	KeyFile      string       `toml:"keyfile"`
 	Address      string       `toml:"address"`
 	PidFile      string       `toml:"pidfile"`
-	LogFile      string       `toml:"logfile"`
+	LogDB        string       `toml:"logdb"`
 	Repos        map[string]RepoConfig
 }
 
@@ -39,6 +39,11 @@ func (c *Config) Reload(configfile string) error {
 	tmp.Repos = make(map[string]RepoConfig)
 	for _, v := range tmp.Repositories {
 		tmp.Repos[v.Name+"@"+v.Branch] = v
+	}
+	if LogDB == nil {
+		if err := InitDB(tmp.LogDB); err != nil {
+			return err
+		}
 	}
 	*c = tmp
 	return nil

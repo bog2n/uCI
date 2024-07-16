@@ -12,10 +12,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
-func deploy(conf RepoConfig, URL string) error {
-	log.Print(URL)
+func deploy(conf RepoConfig, URL string, logger *log.Logger) error {
+	logger.Printf("Deploying: %s", URL)
 	var user string
-	if s := strings.Split(URL, "@"); len(s) == 2 {
+	if s := strings.Split(strings.TrimLeft(URL, "ssh://"), "@"); len(s) == 2 {
 		user = s[0]
 	} else {
 		return errors.New("Can't find ssh user in provided URL")
@@ -33,10 +33,11 @@ func deploy(conf RepoConfig, URL string) error {
 	if err != nil && err != git.ErrRepositoryNotExists {
 		return err
 	} else if err == git.ErrRepositoryNotExists {
+		logger.Print("Directory not found, cloning to: %s", conf.Path)
 		_, err = git.PlainClone(conf.Path, false, &git.CloneOptions{
 			URL:           URL,
 			Auth:          sshAuth,
-			Progress:      log.Default().Writer(),
+			Progress:      logger.Writer(),
 			ReferenceName: plumbing.NewBranchReferenceName(conf.Branch),
 		})
 		if err != nil {
@@ -48,7 +49,7 @@ func deploy(conf RepoConfig, URL string) error {
 			return err
 		}
 		if len(remote.Config().URLs) > 0 && remote.Config().URLs[0] != URL {
-			log.Print("Wrong repo")
+			logger.Print("Repository URL doesn't match")
 			return err
 		}
 		w, err := r.Worktree()
@@ -57,17 +58,19 @@ func deploy(conf RepoConfig, URL string) error {
 		}
 		err = w.Pull(&git.PullOptions{
 			Auth:     sshAuth,
-			Progress: log.Default().Writer(),
+			Progress: logger.Writer(),
 		})
 		if err != nil && err != git.NoErrAlreadyUpToDate {
 			return err
 		}
 	}
 	if len(conf.Cmd) <= 0 {
-		return err
+		return errors.New("No command specified")
 	}
+	logger.Printf("Running command: %s", conf.Cmd)
 	cmd := exec.Command(conf.Cmd[0], conf.Cmd[1:]...)
 	cmd.Dir = conf.Path
-	cmd.Stdout = log.Default().Writer()
+	cmd.Stderr = logger.Writer()
+	cmd.Stdout = logger.Writer()
 	return cmd.Run()
 }

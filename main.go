@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -28,15 +27,6 @@ func init() {
 	err := config.Reload(ConfigFile)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	if config.LogFile != "" {
-		logfile, err := os.OpenFile(config.LogFile,
-			os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Default().SetOutput(io.MultiWriter(os.Stdout, logfile))
 	}
 
 	c := make(chan os.Signal, 1)
