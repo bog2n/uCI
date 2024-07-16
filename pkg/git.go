@@ -1,10 +1,11 @@
 package pkg
 
 import (
+	"errors"
 	"log"
-	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -13,16 +14,20 @@ import (
 
 func deploy(conf RepoConfig, URL string) error {
 	log.Print(URL)
-	urlinfo, err := url.Parse(URL)
-	if err != nil {
-		return err
+	var user string
+	if s := strings.Split(URL, "@"); len(s) == 2 {
+		user = s[0]
+	} else {
+		return errors.New("Can't find ssh user in provided URL")
 	}
-	user := urlinfo.User.Username()
 	key, err := os.ReadFile(conf.SshPrivKey)
 	if err != nil {
 		return err
 	}
 	sshAuth, err := ssh.NewPublicKeys(user, key, "")
+	if err != nil {
+		return err
+	}
 
 	r, err := git.PlainOpen(conf.Path)
 	if err != nil && err != git.ErrRepositoryNotExists {

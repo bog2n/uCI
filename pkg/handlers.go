@@ -36,7 +36,7 @@ func (c *Config) MainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if b, ok := strings.CutPrefix(p.Ref, "refs/heads/"); ok {
-		repoKey := p.Repo.Name + " " + b
+		repoKey := p.Repo.Name + "@" + b
 		if conf, ok := c.Repos[repoKey]; ok {
 			shasum := r.Header.Get("x-hub-signature-256")
 			h := hmac.New(sha256.New, []byte(conf.Auth))

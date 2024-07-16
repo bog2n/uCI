@@ -38,7 +38,7 @@ func (c *Config) Reload(configfile string) error {
 	}
 	tmp.Repos = make(map[string]RepoConfig)
 	for _, v := range tmp.Repositories {
-		tmp.Repos[v.Name+" "+v.Branch] = v
+		tmp.Repos[v.Name+"@"+v.Branch] = v
 	}
 	*c = tmp
 	return nil
