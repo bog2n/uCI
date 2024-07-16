@@ -1,16 +1,8 @@
 body {
 	font-family: 'Fira Sans', 'Roboto', system-ui;
 	display: grid;
-	grid-template: auto auto / minmax(200px, 20%) 1fr;
+	grid-template: auto auto / minmax(200px, 18%) 1fr;
 	background-color: #ffffff;
-}
-
-@media(prefers-color-scheme: dark) {
-	body {
-		background-color: #181818;
-		color: #eeeff1;
-	}
-	a { color: #BAD7FF; }
 }
 
 h1, h2, h3, h4, h5, ul, li {
@@ -22,6 +14,9 @@ header {
 	padding: 1rem;
 	grid-column: 1 / 3;
 	font-size: 1.5em;
+}
+header > a {
+	color: #000;
 }
 
 nav {
@@ -35,4 +30,27 @@ nav > ul {
 
 main {
 	padding: 8px;
+}
+
+.branch {
+	border-radius: 0.6em;
+	padding: 0 0.5em;
+	background-color: #af96e9;
+}
+
+code {
+	background-color: #080808;
+	color: #eeeff1;
+	padding: 2px;
+}
+
+@media(prefers-color-scheme: dark) {
+	body {
+		background-color: #181818;
+		color: #eeeff1;
+	}
+	a { color: #BAD7FF; }
+	header > a {
+		color: #eeeff1;
+	}
 }

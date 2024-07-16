@@ -7,16 +7,16 @@
 	<link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-	<header><b>μCI - {{ .Header }}</b></header>
+	<header><a href="/"><b>μCI - {{ .Header }}</b></a></header>
 {{- end }}
 
 {{ define "nav" }}
 <nav>
 	<h3>Repositories</h3>
 	<ul>
-	{{ range .Nav }}
+	{{- range .Nav }}
 		<li><a href="{{.Href}}">{{.Name}}</a></li>
-	{{ end }}
+	{{- end }}
 	</ul>
 </nav>
 {{- end }}
