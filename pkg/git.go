@@ -33,7 +33,7 @@ func deploy(conf RepoConfig, URL string, logger *log.Logger) error {
 	if err != nil && err != git.ErrRepositoryNotExists {
 		return err
 	} else if err == git.ErrRepositoryNotExists {
-		logger.Print("Directory not found, cloning to: %s", conf.Path)
+		logger.Printf("Directory not found, cloning to: %s", conf.Path)
 		_, err = git.PlainClone(conf.Path, false, &git.CloneOptions{
 			URL:           URL,
 			Auth:          sshAuth,

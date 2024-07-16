@@ -6,6 +6,7 @@ import (
 	"embed"
 	"log"
 	"path"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -77,4 +78,42 @@ func InitDB(name string) error {
 		return err
 	}
 	return migrateDB()
+}
+
+type logRecord struct {
+	Id   int
+	Name string
+	Time time.Time
+	Data string
+}
+
+func getLogs(name string) []logRecord {
+	rows, err := LogDB.Query("SELECT id, time FROM logs WHERE repo = $1 ORDER BY ID DESC", name)
+	if err != nil {
+		log.Print(err)
+		return []logRecord{}
+	}
+	var out []logRecord
+	for rows.Next() {
+		var id, t int
+		rows.Scan(&id, &t)
+		out = append(out, logRecord{
+			Id:   id,
+			Time: time.Unix(int64(t), 0),
+		})
+	}
+	return out
+}
+
+func getLog(id int) logRecord {
+	l := logRecord{}
+	var t int64
+	err := LogDB.QueryRow("SELECT id, repo, time, data FROM logs WHERE id = $1", id).
+		Scan(&l.Id, &l.Name, &t, &l.Data)
+	if err != nil {
+		log.Print(err)
+		return logRecord{Id: -1}
+	}
+	l.Time = time.Unix(t, 0)
+	return l
 }

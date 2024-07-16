@@ -38,10 +38,17 @@ main {
 	background-color: #af96e9;
 }
 
-code {
+code, pre {
 	background-color: #080808;
 	color: #eeeff1;
-	padding: 2px;
+	padding: 4px;
+	width: auto;
+}
+
+#logs {
+	margin-top: 1em;
+	font-size: 1.2em;
+	font-family: monospace;
 }
 
 @media(prefers-color-scheme: dark) {
