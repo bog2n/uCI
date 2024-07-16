@@ -30,9 +30,6 @@ func init() {
 		log.Fatal(err)
 	}
 
-	if os.Getenv("DEV") != "" {
-		log.Default().SetFlags(log.Lshortfile | log.Lmicroseconds | log.Ldate)
-	}
 	if config.LogFile != "" {
 		logfile, err := os.OpenFile(config.LogFile,
 			os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
