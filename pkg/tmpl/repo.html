@@ -12,11 +12,11 @@ Deploy command: <code>{{ range .Cmd }}{{.}} {{end}}</code><br>
 	<b>Logs:</b><br>
 	{{- range .Content.Logs }}
 	<a href="/logs?id={{.Id}}">{{ .Time.Format "2006.01.02 15:04:05"}}</a>
-	{{if .Success}}
+	{{- if .Success}}
 	<span class="button success">Success</span>
-	{{else}}
+	{{- else}}
 	<span class="button failed">Failed</span>
-	{{end}}
+	{{- end}}
 	<br>
 	{{- end }}
 </div>

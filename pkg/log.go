@@ -120,3 +120,25 @@ func getLog(id int) logRecord {
 	l.Time = time.Unix(t, 0)
 	return l
 }
+
+func getLatestLogs() []logRecord {
+	rows, err := LogDB.Query("SELECT id, repo, time, success FROM logs ORDER BY time DESC LIMIT 10")
+	if err != nil {
+		log.Print(err)
+		return []logRecord{}
+	}
+	var out []logRecord
+	for rows.Next() {
+		var id, t int
+		var s bool
+		var name string
+		rows.Scan(&id, &name, &t, &s)
+		out = append(out, logRecord{
+			Id:      id,
+			Name:    name,
+			Time:    time.Unix(int64(t), 0),
+			Success: s,
+		})
+	}
+	return out
+}

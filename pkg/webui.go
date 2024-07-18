@@ -32,6 +32,7 @@ func (c *Config) UiHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/":
 		p.Header = "simple way to deploy your code."
+		p.Content = getLatestLogs()
 		if err := tmpl.Execute(w, "index", p); err != nil {
 			errno := http.StatusInternalServerError
 			http.Error(w, http.StatusText(errno), errno)

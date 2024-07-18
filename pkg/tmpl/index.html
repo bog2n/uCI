@@ -2,7 +2,18 @@
 {{- template "header" . }}
 {{- template "nav" . }}
 <main>
-{{ .Content }}
+	<h3>Latest deployments:</h3>
+<div id="logs">
+{{- range .Content }}
+	<a href="/repo?name={{.Name}}">{{.Name}}</a> - <a href="/logs?id={{.Id}}">{{ .Time.Format "2006.01.02 15:04:05"}}</a>
+	{{- if .Success}}
+	<span class="button success">Success</span>
+	{{- else}}
+	<span class="button failed">Failed</span>
+	{{- end -}}
+	<br>
+{{- end }}
+</div>
 </main>
 {{- template "footer" . }}
 {{- end }}
