@@ -4,14 +4,20 @@
 <main>
 {{- with .Content.Repo }}
 <b>{{ .Name }}</b>
-<span class="branch">&#66180; {{ .Branch }}</span>
+<span class="button branch">&#66180; {{ .Branch }}</span>
 <hr>
 Deploy command: <code>{{ range .Cmd }}{{.}} {{end}}</code><br>
 {{- end }}
 <div id="logs">
 	<b>Logs:</b><br>
 	{{- range .Content.Logs }}
-	<a href="/logs?id={{.Id}}">{{ .Time.Format "2006.01.02 15:04:05"}}</a><br>
+	<a href="/logs?id={{.Id}}">{{ .Time.Format "2006.01.02 15:04:05"}}</a>
+	{{if .Success}}
+	<span class="button success">Success</span>
+	{{else}}
+	<span class="button failed">Failed</span>
+	{{end}}
+	<br>
 	{{- end }}
 </div>
 </main>

@@ -32,10 +32,21 @@ main {
 	padding: 8px;
 }
 
-.branch {
+.button {
 	border-radius: 0.6em;
 	padding: 0 0.5em;
+}
+
+.branch {
 	background-color: #af96e9;
+}
+
+.success {
+	background-color: limegreen;
+}
+
+.failed {
+	background-color: crimson;
 }
 
 code, pre {
@@ -46,6 +57,7 @@ code, pre {
 }
 
 #logs {
+	line-height: 1.5em;
 	margin-top: 1em;
 	font-size: 1.2em;
 	font-family: monospace;

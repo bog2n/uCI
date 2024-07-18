@@ -17,9 +17,9 @@ func newDeployLogger(repoName string) (*log.Logger, chan bool) {
 	b := bytes.Buffer{}
 	ready := make(chan bool)
 	go func() {
-		<-ready
-		_, err := LogDB.Exec(`INSERT INTO logs (repo, time, data)
-			VALUES ($1, unixepoch('now'), $2)`, repoName, b.String())
+		s := <-ready
+		_, err := LogDB.Exec(`INSERT INTO logs (repo, time, data, success)
+			VALUES ($1, unixepoch('now'), $2, $3)`, repoName, b.String(), s)
 		if err != nil {
 			log.Print(err)
 		}
@@ -81,14 +81,15 @@ func InitDB(name string) error {
 }
 
 type logRecord struct {
-	Id   int
-	Name string
-	Time time.Time
-	Data string
+	Id      int
+	Name    string
+	Time    time.Time
+	Data    string
+	Success bool
 }
 
 func getLogs(name string) []logRecord {
-	rows, err := LogDB.Query("SELECT id, time FROM logs WHERE repo = $1 ORDER BY ID DESC", name)
+	rows, err := LogDB.Query("SELECT id, time, success FROM logs WHERE repo = $1 ORDER BY ID DESC", name)
 	if err != nil {
 		log.Print(err)
 		return []logRecord{}
@@ -96,10 +97,12 @@ func getLogs(name string) []logRecord {
 	var out []logRecord
 	for rows.Next() {
 		var id, t int
-		rows.Scan(&id, &t)
+		var s bool
+		rows.Scan(&id, &t, &s)
 		out = append(out, logRecord{
-			Id:   id,
-			Time: time.Unix(int64(t), 0),
+			Id:      id,
+			Time:    time.Unix(int64(t), 0),
+			Success: s,
 		})
 	}
 	return out

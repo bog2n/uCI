@@ -49,12 +49,17 @@ func (c *Config) MainHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			logger, ready := newDeployLogger(repoKey)
-			defer func() { ready <- true }()
+			var s bool
+			defer func() { ready <- s }()
 			err := deploy(conf, p.Repo.URL, logger)
 			if err != nil {
+				s = false
 				logger.Print("Error deploying: ", err)
 				errno := http.StatusInternalServerError
 				http.Error(w, http.StatusText(errno), errno)
+			} else {
+				s = true
+				logger.Print("Successfully deployed!")
 			}
 		} else {
 			log.Print("Repository key: ", repoKey, " not found")
