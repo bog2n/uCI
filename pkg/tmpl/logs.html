@@ -1,0 +1,10 @@
+{{ define "logs" }}
+{{- template "header" . }}
+{{- template "nav" . }}
+<main>
+<pre>
+{{ .Content.Data }}
+</pre>
+</main>
+{{- template "footer" . }}
+{{- end }}
