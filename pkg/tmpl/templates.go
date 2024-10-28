@@ -21,11 +21,6 @@ func init() {
 	}
 }
 
-type tmplPair struct {
-	Name string
-	Data any
-}
-
 func Execute(w io.Writer, name string, data any) error {
 	return tmpl.ExecuteTemplate(w, name, data)
 }
