@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// https://www.alexedwards.net/blog/basic-authentication-in-go
 func (c *Config) BasicAuth(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
