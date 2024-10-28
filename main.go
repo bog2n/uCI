@@ -83,8 +83,11 @@ func init() {
 }
 
 func main() {
-	http.HandleFunc("/", config.UiHandler)
-	http.HandleFunc("/uci", config.MainHandler)
+	http.HandleFunc("/", config.MainHandler)
+	http.HandleFunc("/repo/{name}", config.RepoHandler)
+	http.HandleFunc("/logs/{id}", config.LogsHandler)
+
+	http.HandleFunc("/uci", config.CIHandler)
 	http.Handle("/static/", http.FileServer(pkg.StaticFS))
 	s := ""
 	if config.TLS {

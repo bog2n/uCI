@@ -1,8 +1,15 @@
 package pkg
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -11,6 +18,67 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
+
+func (c *Config) CIHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		errno := http.StatusMethodNotAllowed
+		http.Error(w, http.StatusText(errno), errno)
+		return
+	}
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	var p struct {
+		Ref  string `json:"ref"`
+		Repo struct {
+			Name string `json:"full_name"`
+			URL  string `json:"ssh_url"`
+		} `json:"repository"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		log.Print("Error decoding json payload: ", err)
+		return
+	}
+
+	if b, ok := strings.CutPrefix(p.Ref, "refs/heads/"); ok {
+		repoKey := p.Repo.Name + "@" + b
+		if conf, ok := c.Repos[repoKey]; ok {
+			shasum := r.Header.Get("x-hub-signature-256")
+			h := hmac.New(sha256.New, []byte(conf.Auth))
+			h.Write(payload)
+			payloadsum := "sha256=" + hex.EncodeToString(h.Sum(nil))
+			if subtle.ConstantTimeCompare([]byte(payloadsum), []byte(shasum)) != 1 {
+				errno := http.StatusUnauthorized
+				http.Error(w, http.StatusText(errno), errno)
+				log.Print("Unauthorized request")
+				return
+			}
+			logger, ready := newDeployLogger(repoKey)
+			var s bool
+			defer func() { ready <- s }()
+			err := deploy(conf, p.Repo.URL, logger)
+			if err != nil {
+				s = false
+				logger.Print("Error deploying: ", err)
+				errno := http.StatusInternalServerError
+				http.Error(w, http.StatusText(errno), errno)
+			} else {
+				s = true
+				logger.Print("Successfully deployed!")
+			}
+		} else {
+			log.Print("Repository key: ", repoKey, " not found")
+			http.NotFound(w, r)
+		}
+	} else {
+		log.Print("Branch not found")
+		errno := http.StatusInternalServerError
+		http.Error(w, http.StatusText(errno), errno)
+	}
+}
 
 func deploy(conf RepoConfig, URL string, logger *log.Logger) error {
 	logger.Printf("Deploying: %s", URL)

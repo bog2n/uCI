@@ -4,7 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<title>µCI - {{ .Header }}</title>
-	<link rel="stylesheet" href="static/style.css">
+	<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 	<header><a href="/"><b>μCI - {{ .Header }}</b></a></header>
@@ -15,7 +15,7 @@
 	<h3>Repositories</h3>
 	<ul>
 	{{- range .Nav }}
-		<li><a href="{{.Href}}">{{.Name}}</a></li>
+		<li><a href="/repo/{{.Href|urlquery}}">{{.Name}}</a></li>
 	{{- end }}
 	</ul>
 </nav>

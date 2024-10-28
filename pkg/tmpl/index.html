@@ -5,7 +5,7 @@
 	<h3>Latest deployments:</h3>
 <div id="logs">
 {{- range .Content }}
-	<a href="/repo?name={{.Name}}">{{.Name}}</a> - <a href="/logs?id={{.Id}}">{{ .Time.Format "2006.01.02 15:04:05"}}</a>
+	<a href="/repo/{{.Name|urlquery}}">{{.Name}}</a> - <a href="/logs/{{.Id}}">{{ .Time.Format "2006.01.02 15:04:05"}}</a>
 	{{- if .Success}}
 	<span class="button success">Success</span>
 	{{- else}}
