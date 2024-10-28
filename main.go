@@ -15,7 +15,7 @@ var (
 	ConfigFile string
 	Signal     string
 	logfile    *os.File
-	config     pkg.Config
+	cfg        pkg.Config
 )
 
 func init() {
@@ -24,7 +24,7 @@ func init() {
 	flag.StringVar(&Signal, "s", "", "signal to send to process: reload, stop")
 	flag.Parse()
 
-	err := config.Reload(ConfigFile)
+	err := cfg.Reload(ConfigFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func init() {
 			switch <-c {
 			case syscall.SIGHUP:
 				log.Print("Received SIGHUP, reloading config")
-				err := config.Reload(ConfigFile)
+				err := cfg.Reload(ConfigFile)
 				if err != nil {
 					log.Print("Error reloading config: ", err)
 				}
@@ -45,14 +45,14 @@ func init() {
 				// TODO probably should add context stuff here
 				log.Print("Received SIGTERM, exiting...")
 				logfile.Close()
-				os.Remove(config.PidFile)
+				os.Remove(cfg.PidFile)
 				os.Exit(0)
 			}
 		}
 	}()
 
 	if Signal != "" {
-		pidstring, err := os.ReadFile(config.PidFile)
+		pidstring, err := os.ReadFile(cfg.PidFile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -74,7 +74,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	pid, err := os.Create(config.PidFile)
+	pid, err := os.Create(cfg.PidFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -83,20 +83,20 @@ func init() {
 }
 
 func main() {
-	http.HandleFunc("/", config.MainHandler)
-	http.HandleFunc("/repo/{name}", config.RepoHandler)
-	http.HandleFunc("/logs/{id}", config.LogsHandler)
+	http.HandleFunc("/", cfg.BasicAuth(cfg.MainHandler))
+	http.HandleFunc("/repo/{name}", cfg.BasicAuth(cfg.RepoHandler))
+	http.HandleFunc("/logs/{id}", cfg.BasicAuth(cfg.LogsHandler))
 
-	http.HandleFunc("/uci", config.CIHandler)
+	http.HandleFunc("/uci", cfg.CIHandler)
 	http.Handle("/static/", http.FileServer(pkg.StaticFS))
 	s := ""
-	if config.TLS {
+	if cfg.TLS {
 		s = " with TLS enabled"
 	}
-	log.Printf("Listening on %s%s", config.Address, s)
-	if config.TLS {
-		log.Fatal(http.ListenAndServeTLS(config.Address, config.CertFile, config.KeyFile, nil))
+	log.Printf("Listening on %s%s", cfg.Address, s)
+	if cfg.TLS {
+		log.Fatal(http.ListenAndServeTLS(cfg.Address, cfg.CertFile, cfg.KeyFile, nil))
 	} else {
-		log.Fatal(http.ListenAndServe(config.Address, nil))
+		log.Fatal(http.ListenAndServe(cfg.Address, nil))
 	}
 }

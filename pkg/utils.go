@@ -16,8 +16,10 @@ address  = "<bind address>"
 TLS      = true/false
 keyfile  = "<tls private key>"
 certfile = "<tls certificate>"
-logdb  = "<logfile>"
+logdb    = "<logfile>"
 pidfile  = "<pidfile>"
+username = "<username>"
+password = "<password>"
 
 [[repo]]
 	name     = "<gitea repo name>"

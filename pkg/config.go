@@ -23,6 +23,8 @@ type Config struct {
 	Address      string       `toml:"address"`
 	PidFile      string       `toml:"pidfile"`
 	LogDB        string       `toml:"logdb"`
+	Username     string       `toml:"username"`
+	Password     string       `toml:"password"`
 	Repos        map[string]RepoConfig
 }
 
