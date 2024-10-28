@@ -1,6 +1,6 @@
 module uci
 
-go 1.21.1
+go 1.22.0
 
 require (
 	github.com/BurntSushi/toml v1.3.2
