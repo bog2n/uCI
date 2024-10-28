@@ -16,7 +16,7 @@ address  = "<bind address>"
 TLS      = true/false
 keyfile  = "<tls private key>"
 certfile = "<tls certificate>"
-logfile  = "<logfile>"
+logdb  = "<logfile>"
 pidfile  = "<pidfile>"
 
 [[repo]]
