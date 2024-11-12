@@ -79,7 +79,7 @@ func init() {
 		log.Fatal(err)
 	}
 	defer pid.Close()
-	pid.WriteString(strconv.Itoa(os.Getpid()))
+	pid.WriteString(strconv.Itoa(os.Getpid()) + "\n")
 }
 
 func main() {

@@ -22,7 +22,7 @@ username = "<username>"
 password = "<password>"
 
 [[repo]]
-	name     = "<gitea repo name>"
+	name     = "<repositry name>"
 	branch   = "<git branch>"
 	keyfile  = "<ssh private key file>"
 	path     = "<path to repo>"
