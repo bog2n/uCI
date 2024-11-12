@@ -57,6 +57,9 @@ func init() {
 			log.Fatal(err)
 		}
 		pid, err := strconv.Atoi(string(pidstring))
+		if err != nil {
+			log.Fatal(err)
+		}
 		switch Signal {
 		case "reload":
 			proc, err := os.FindProcess(pid)
@@ -79,7 +82,7 @@ func init() {
 		log.Fatal(err)
 	}
 	defer pid.Close()
-	pid.WriteString(strconv.Itoa(os.Getpid()) + "\n")
+	pid.WriteString(strconv.Itoa(os.Getpid()))
 }
 
 func main() {

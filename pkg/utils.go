@@ -22,7 +22,7 @@ username = "<username>"
 password = "<password>"
 
 [[repo]]
-	name     = "<repositry name>"
+	name     = "<repository name>"
 	branch   = "<git branch>"
 	keyfile  = "<ssh private key file>"
 	path     = "<path to repo>"
