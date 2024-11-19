@@ -1,6 +1,6 @@
 # µCI
 
-µCI *(micro-see-ay)* is a minimalistic deployment tool using webhooks.
+µCI *(micro-see-aye)* is a minimalistic deployment tool using webhooks.
 It provides single http(s) endpoint that all your git repositories send
 webhooks to and runs specified command after receiving webhook on that
 endpoint.
